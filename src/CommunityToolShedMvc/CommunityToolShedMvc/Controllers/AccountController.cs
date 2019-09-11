@@ -16,6 +16,46 @@ namespace CommunityToolShedMvc.Controllers
     public class AccountController : Controller
     {
         [AllowAnonymous]
+        public ActionResult Register()
+        {
+            var viewModel = new RegisterViewModel();
+            return View(viewModel);
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public ActionResult Register(RegisterViewModel viewModel)
+        {
+            // TODO Validate that the provided email
+            // isn't already associated with a person.
+
+            if (ModelState.IsValid)
+            {
+                string hashedPassword = BCrypt.Net.BCrypt.HashPassword(viewModel.Password, 12);
+
+                DatabaseHelper.Insert(@"
+                    insert Person (
+                        Name,
+                        Email,
+                        HashedPassword
+                    ) values (
+                        @Name,
+                        @Email,
+                        @HashedPassword
+                    )
+                ", 
+                    new SqlParameter("@Name", viewModel.Name),
+                    new SqlParameter("@Email", viewModel.Email),
+                    new SqlParameter("@HashedPassword", hashedPassword));
+
+                FormsAuthentication.SetAuthCookie(viewModel.Email, false);
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View(viewModel);
+        }
+
+        [AllowAnonymous]
         public ActionResult Login()
         {
             var viewModel = new LoginViewModel();
